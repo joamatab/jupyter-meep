@@ -12,5 +12,4 @@ def give_1d_microring_geometry(n=3.4, w=1, r=1, pad=4):
                          size=mp.Vector3(w, mp.inf, mp.inf),
                          material=mp.Medium(index=n))
 
-    geometry = [background, waveguide]
-    return geometry
+    return [background, waveguide]

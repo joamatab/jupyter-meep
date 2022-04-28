@@ -39,8 +39,7 @@ def set_sim3():
 
 
 # 3D
-if False:
-    default_geo.update(pitch = .264, thickness=0.22)
+pass
 
 
 def kwargs_to_geo(geo=None, **kwargs):
@@ -56,19 +55,17 @@ df = fcen / 10
 nfreq = 1001
 def bragg_source(geo=None, **kwargs):
     geo = kwargs_to_geo(geo, **kwargs)
-    # sources = []
-    # sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
-    #                  component=mp.Ey,
-    #                  center=mp.Vector3(-monitor_x(geo)-.5, 0),
-    #                  size=mp.Vector3(0, geo.sm_width, geo.thickness))]
-    sources = [mp.EigenModeSource(mp.GaussianSource(fcen, fwidth=df),
-                                  eig_band=2,
-                                  direction=mp.X,
-                                  # eig_parity=mp.ODD_Y,
-                                  component=mp.Ey,
-                                  center=mp.Vector3(-monitor_x(geo)-.5, 0),
-                                  size=mp.Vector3(0, bragg_cell(geo).y, bragg_cell(geo).z))]
-    return sources
+    return [
+        mp.EigenModeSource(
+            mp.GaussianSource(fcen, fwidth=df),
+            eig_band=2,
+            direction=mp.X,
+            # eig_parity=mp.ODD_Y,
+            component=mp.Ey,
+            center=mp.Vector3(-monitor_x(geo) - 0.5, 0),
+            size=mp.Vector3(0, bragg_cell(geo).y, bragg_cell(geo).z),
+        )
+    ]
 
 
 dpml = 1.
@@ -101,19 +98,22 @@ def bragg_cell(geo=None, **kwargs):
     geo = kwargs_to_geo(geo, **kwargs)
     cell_y = 3
     cell_z = 0 if geo.thickness == 0 else geo.thickness + 3
-    cell = mp.Vector3(cell_x(geo), cell_y, cell_z)
-    return cell
+    return mp.Vector3(cell_x(geo), cell_y, cell_z)
 
 
 def bragg_geometry(geo=None, **kwargs):
     geo = kwargs_to_geo(geo, **kwargs)
     cellx = cell_x(geo)
 
-    geometry = []
-    for side_sign in [-1, 1]:
-        geometry.append(mp.Block(mp.Vector3(geo.buffer, geo.sm_width, geo.thickness),
-                                 center=mp.Vector3((cellx - geo.buffer) * side_sign/2),
-                                 material=silicon))
+    geometry = [
+        mp.Block(
+            mp.Vector3(geo.buffer, geo.sm_width, geo.thickness),
+            center=mp.Vector3((cellx - geo.buffer) * side_sign / 2),
+            material=silicon,
+        )
+        for side_sign in [-1, 1]
+    ]
+
     # the teeth of the grating
     x0 = geo.buffer - cellx/2
     for iPeriod in range(geo.n_periods):
@@ -161,7 +161,7 @@ def livefield(sim):
 
 def monitor_until(geo=None, until=None, **kwargs):
     geo = kwargs_to_geo(geo, **kwargs)
-    stop_kwarg = dict()
+    stop_kwarg = {}
     if until is None:
         monitor_point = mp.Vector3(monitor_x(geo), 0, 0)
         stop_kwarg['until_after_sources'] = mp.stop_when_fields_decayed(20, mp.Ey, monitor_point, 1e-3)

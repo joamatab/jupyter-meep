@@ -91,7 +91,7 @@ wl = []
 Rs = []
 Ts = []
 
-for i in range(0,nfreq):
+for i in range(nfreq):
     wl = np.append(wl, 1/flux_freqs[i])
     Rs = np.append(Rs,-bend_refl_flux[i]/straight_tran_flux[i])
     Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])

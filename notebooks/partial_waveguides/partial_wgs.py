@@ -19,10 +19,14 @@ sc_z = t_box + t_top
 geometry_lattice = mp.Lattice(size=mp.Vector3(0,sc_y,sc_z))
 
 def get_xs(wg_width=0.35, two_wg_gap=None, encapsulation=None):
-    geometry = []
-    # Cladding
-    geometry.append(mp.Block(size=mp.Vector3(mp.inf, mp.inf, t_top),
-                     center=mp.Vector3(z=t_top/2), material=Cladding))
+    geometry = [
+        mp.Block(
+            size=mp.Vector3(mp.inf, mp.inf, t_top),
+            center=mp.Vector3(z=t_top / 2),
+            material=Cladding,
+        )
+    ]
+
     # BOX
     geometry.append(mp.Block(size=mp.Vector3(mp.inf, mp.inf, t_box),
                      center=mp.Vector3(z=-t_box/2), material=SiO2))
@@ -41,21 +45,28 @@ def get_xs(wg_width=0.35, two_wg_gap=None, encapsulation=None):
         offsets = [0]
     else:
         offsets = np.array([-1, 1]) * (wg_width + two_wg_gap)/2
-    for offset in offsets:
-        geometry.append(mp.Block(size=mp.Vector3(mp.inf, wg_width, t_si),
-                        center=mp.Vector3(y=offset, z=t_si/2), material=ColdSi))
+    geometry.extend(
+        mp.Block(
+            size=mp.Vector3(mp.inf, wg_width, t_si),
+            center=mp.Vector3(y=offset, z=t_si / 2),
+            material=ColdSi,
+        )
+        for offset in offsets
+    )
+
     return geometry
 
 
 def get_ms(geom = None, k_points=[0,1], num_bands=1):
     if geom is None:
         geom = get_xs()
-    ms = mpb.ModeSolver(geometry_lattice=geometry_lattice,
-                        geometry=geom,
-                        k_points=k_points,
-                        resolution=resolution,
-                        num_bands=num_bands)
-    return ms
+    return mpb.ModeSolver(
+        geometry_lattice=geometry_lattice,
+        geometry=geom,
+        k_points=k_points,
+        resolution=resolution,
+        num_bands=num_bands,
+    )
 
 
 def cutoff_k(freq):
@@ -76,8 +87,14 @@ def get_ks(xs=None, freq=1/1.218, num_bands=1):
     kmag_min = freq*0.1
     kmag_max = freq*4.0
 
-    k_calc = ms.find_k(mp.ODD_Y,
-                       freq, band_min, band_max, kdir, tol,
-                       kmag_guess, kmag_min, kmag_max,)
-                       # mpb.output_poynting_x)#, mpb.display_group_velocities)
-    return k_calc
+    return ms.find_k(
+        mp.ODD_Y,
+        freq,
+        band_min,
+        band_max,
+        kdir,
+        tol,
+        kmag_guess,
+        kmag_min,
+        kmag_max,
+    )

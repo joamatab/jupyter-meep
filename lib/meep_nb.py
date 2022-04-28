@@ -28,8 +28,7 @@ class objview(object):
         self.__dict__.update(kwargs)
 
     def copy(self):
-        new_obj = objview(**self.__dict__)
-        return new_obj
+        return objview(**self.__dict__)
 
 
 def show_geometry(sim_or_solver, **mpb_kwargs):
@@ -37,7 +36,7 @@ def show_geometry(sim_or_solver, **mpb_kwargs):
         # hope it works
         return show_geometry_2d(sim_or_solver, **mpb_kwargs)
     if not isinstance(sim_or_solver, mp.Simulation):
-        raise TypeError('{} not supported'.format(type(sim_or_solver)))
+        raise TypeError(f'{type(sim_or_solver)} not supported')
     if sim_or_solver.dimensions == 1 or sim_or_solver.cell_size.y == 0 and sim_or_solver.cell_size.z == 0:
         return show_geometry_1d(sim_or_solver)
 
@@ -66,7 +65,7 @@ def show_geometry_2d(sim_or_solver, **mpb_kwargs):
         #     # eps_data = eps_data[:, int(eps_data.shape[1] / 2), :]  # for x-z plane
     elif isinstance(sim_or_solver, mpb.ModeSolver):
         ms = sim_or_solver
-        if not any(p in mpb_kwargs.keys() for p in ['periods', 'x', 'y', 'z']):
+        if all(p not in mpb_kwargs.keys() for p in ['periods', 'x', 'y', 'z']):
             mpb_kwargs['periods'] = 3
         md = mpb.MPBData(rectify=True, resolution=ms.resolution[1], **mpb_kwargs)
         eps = ms.get_epsilon()
@@ -131,8 +130,8 @@ def liveplot_1D(sim, component=mp.Ey):
 def to_gif(output_dir, field_type='ez'):
     # Converts pngs from your simulation into a nice gif
     # You must have imagemagik in order to use convert
-    gif_name = field_type + '.gif'
-    simdata_glob = os.path.join(output_dir, field_type + '-*.png')
+    gif_name = f'{field_type}.gif'
+    simdata_glob = os.path.join(output_dir, f'{field_type}-*.png')
     subprocess.check_call(['convert', simdata_glob, gif_name])
     try:
         subprocess.check_call(['open', '-a', 'Safari', gif_name])  # open it if you have Safari

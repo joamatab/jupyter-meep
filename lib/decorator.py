@@ -111,16 +111,16 @@ class FunctionMaker(object):
                 allargs = list(self.args)
                 allshortargs = list(self.args)
                 if self.varargs:
-                    allargs.append('*' + self.varargs)
-                    allshortargs.append('*' + self.varargs)
+                    allargs.append(f'*{self.varargs}')
+                    allshortargs.append(f'*{self.varargs}')
                 elif self.kwonlyargs:
                     allargs.append('*')  # single star syntax
                 for a in self.kwonlyargs:
-                    allargs.append('%s=None' % a)
-                    allshortargs.append('%s=%s' % (a, a))
+                    allargs.append(f'{a}=None')
+                    allshortargs.append(f'{a}={a}')
                 if self.varkw:
-                    allargs.append('**' + self.varkw)
-                    allshortargs.append('**' + self.varkw)
+                    allargs.append(f'**{self.varkw}')
+                    allshortargs.append(f'**{self.varkw}')
                 self.signature = ', '.join(allargs)
                 self.shortsignature = ', '.join(allshortargs)
                 self.dict = func.__dict__.copy()
@@ -140,7 +140,7 @@ class FunctionMaker(object):
         # check existence required attributes
         assert hasattr(self, 'name')
         if not hasattr(self, 'signature'):
-            raise TypeError('You are decorating a non function: %s' % func)
+            raise TypeError(f'You are decorating a non function: {func}')
 
     def update(self, func, **kw):
         "Update the signature of func with the data in self"
@@ -211,7 +211,7 @@ class FunctionMaker(object):
             signature = None
             func = obj
         self = cls(func, name, signature, defaults, doc, module)
-        ibody = '\n'.join('    ' + line for line in body.splitlines())
+        ibody = '\n'.join(f'    {line}' for line in body.splitlines())
         caller = evaldict.get('_call_')  # when called from `decorate`
         if caller and iscoroutinefunction(caller):
             body = ('async def %(name)s(%(signature)s):\n' + ibody).replace(
@@ -267,10 +267,7 @@ def decorator(caller, _func=None):
         doc = 'decorator(%s) converts functions/generators into ' \
             'factories of %s objects' % (caller.__name__, caller.__name__)
     elif inspect.isfunction(caller):
-        if caller.__name__ == '<lambda>':
-            name = '_lambda_'
-        else:
-            name = caller.__name__
+        name = '_lambda_' if caller.__name__ == '<lambda>' else caller.__name__
         doc = caller.__doc__
         nargs = caller.__code__.co_argcount
         ndefs = len(caller.__defaults__ or ())
@@ -283,10 +280,15 @@ def decorator(caller, _func=None):
         doc = caller.__call__.__doc__
     evaldict = dict(_call=caller, _decorate_=decorate)
     dec = FunctionMaker.create(
-        '%s(func, %s)' % (name, defaultargs),
+        f'{name}(func, {defaultargs})',
         'if func is None: return lambda func:  _decorate_(func, _call, (%s))\n'
         'return _decorate_(func, _call, (%s))' % (defaultargs, defaultargs),
-        evaldict, doc=doc, module=caller.__module__, __wrapped__=caller)
+        evaldict,
+        doc=doc,
+        module=caller.__module__,
+        __wrapped__=caller,
+    )
+
     if defaults:
         dec.__defaults__ = (None,) + defaults
     return dec
@@ -394,8 +396,7 @@ def dispatch_on(*dispatch_args):
             for t, vas in zip(types, vancestors(*types)):
                 n_vas = len(vas)
                 if n_vas > 1:
-                    raise RuntimeError(
-                        'Ambiguous dispatch for %s: %s' % (t, vas))
+                    raise RuntimeError(f'Ambiguous dispatch for {t}: {vas}')
                 elif n_vas == 1:
                     va, = vas
                     mro = type('t', (t, va), {}).mro()[1:]
@@ -411,7 +412,7 @@ def dispatch_on(*dispatch_args):
             check(types)
 
             def dec(f):
-                check(getfullargspec(f).args, operator.lt, ' in ' + f.__name__)
+                check(getfullargspec(f).args, operator.lt, f' in {f.__name__}')
                 typemap[types] = f
                 return f
             return dec
@@ -421,10 +422,10 @@ def dispatch_on(*dispatch_args):
             An utility to introspect the dispatch algorithm
             """
             check(types)
-            lst = []
-            for anc in itertools.product(*ancestors(*types)):
-                lst.append(tuple(a.__name__ for a in anc))
-            return lst
+            return [
+                tuple(a.__name__ for a in anc)
+                for anc in itertools.product(*ancestors(*types))
+            ]
 
         def _dispatch(dispatch_args, *args, **kw):
             types = tuple(type(arg) for arg in dispatch_args)

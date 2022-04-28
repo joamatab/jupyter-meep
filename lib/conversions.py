@@ -5,30 +5,29 @@ from phidl import geometry as pg, Device
 import meep as mp
 
 silicon = mp.Medium(epsilon=12)
-cell_material = dict()  # for floorplanning
-port_source = dict()  # for metadata layers
+cell_material = {}
+port_source = {}
 
 
 def get_layer_mapping(layerset):
-    # Gets the silicon layer and the floorplan layer for the cell
-    medium_map = dict()
-    medium_map[layerset['wg_deep'].gds_layer] = silicon
-    medium_map[layerset['FLOORPLAN'].gds_layer] = cell_material
-    medium_map[1] = port_source
-    medium_map[2] = port_source
-    return medium_map
+    return {
+        layerset['wg_deep'].gds_layer: silicon,
+        layerset['FLOORPLAN'].gds_layer: cell_material,
+        1: port_source,
+        2: port_source,
+    }
 
 
 def device_to_meep(device, mapping):
     # converts PHIDL to MEEP. You must give a layer mapping that can be derived from get_layer_mapping
     # TODO: partial etches. Currently this is only 2D
-    geometry = list()
+    geometry = []
     for poly_grp in device.polygons:
         layer = poly_grp.layers[0]
         try:
             material = mapping[layer]
         except KeyError:
-            print('layer {} not in meep mapping'.format(layer))
+            print(f'layer {layer} not in meep mapping')
             continue
         if material is cell_material:
             cell = mp.Vector3(poly_grp.xsize, poly_grp.ysize)
@@ -36,9 +35,7 @@ def device_to_meep(device, mapping):
         elif material is port_source:
             continue
         for poly in poly_grp.polygons:
-            vertex_list = list()
-            for vertex in poly:
-                vertex_list.append(mp.Vector3(vertex[0], vertex[1]))
+            vertex_list = [mp.Vector3(vertex[0], vertex[1]) for vertex in poly]
             geometry.append(mp.Prism(vertex_list, height=0, material=material))
     return cell, geometry
 
